@@ -1,0 +1,13 @@
+Package: jp.rono23.removebackground
+Name: Remove Background SBSettings
+Version: 1.0-5
+Architecture: iphoneos-arm
+Description: Remove all apps from the task switcher with SBSettings.
+Homepage: http://moreinfo.thebigboss.org/moreinfo/depiction.php?file=sbsremovebackgroundappsData
+Depiction: http://moreinfo.thebigboss.org/moreinfo/depiction.php?file=sbsremovebackgroundappsData
+Maintainer: BigBoss <bigboss@thebigboss.org>
+Author: rono23 <rono23@gmail.com>
+Sponsor: thebigboss.org <http://thebigboss.org>
+Section: SBSettings Addons
+dev: rono23
+Depends: firmware (>= 4.0), sbsettings, mobilesubstrate
