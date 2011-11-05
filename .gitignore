@@ -1,0 +1,11 @@
+.DS_Store
+.rvmrc
+.svn
+*.swp
+*.deb
+*.deb
+*.dylib
+*.o
+Extension/obj/
+Preferences/obj/
+_/
