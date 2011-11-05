@@ -2,9 +2,9 @@ OBJECTS = Toggle
 TARGET = Toggle.dylib
 TOGGLE_NAME = RemoveBG
 
-SDKVERSION = 4.2
+SDKVERSION = 5.0
 SDKBINPATH = /Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
-CC = $(SDKBINPATH)/arm-apple-darwin10-gcc-4.2.1
+CC = $(SDKBINPATH)/arm-apple-darwin10-llvm-gcc-4.2
 SYSROOT = /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(SDKVERSION).sdk
 
 SB_PATH = /Developer/Jailbreak
@@ -49,12 +49,10 @@ package: $(TARGET) control
 	mkdir -p package/var/mobile/Library/SBSettings/Toggles/$(TOGGLE_NAME)/
 	cp -a Toggle.dylib package/var/mobile/Library/SBSettings/Toggles/$(TOGGLE_NAME)/
 	cp -a Themes package/var/mobile/Library/SBSettings/
+	sudo chgrp -R wheel package
+	sudo chown -R root package
 	dpkg-deb -b package $(shell grep ^Package: control | cut -d ' ' -f 2)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
-	rm -rf package
-	#sudo chgrp -R wheel package
-	#sudo chown -R root package
-	#sudo dpkg-deb -b package $(shell grep ^Package: control | cut -d ' ' -f 2)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb
-	#sudo rm -rf package
+	sudo rm -rf package
 
 install: package
 	scp -P2222 $(shell grep ^Package: control | cut -d ' ' -f 2)_$(shell grep ^Version: control | cut -d ' ' -f 2)_iphoneos-arm.deb root@localhost:.

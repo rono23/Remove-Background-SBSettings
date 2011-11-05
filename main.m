@@ -5,6 +5,7 @@
 #import <SpringBoard/SBApplicationIcon.h>
 #import <SpringBoard/SBAppSwitcherController.h>
 #import <SpringBoard/SBAppSwitcherBarView.h>
+#import <SpringBoard/SBIconView.h>
 
 @interface SBAppIconQuitButton : UIButton
 @property(retain, nonatomic) SBApplicationIcon *appIcon;
@@ -48,6 +49,8 @@ float getDelayTime() {
 }
 
 void setState(BOOL Enable) {
+    float isFirmware = [[[UIDevice currentDevice] systemVersion] floatValue];
+
     NSMutableArray *apps = [[NSMutableArray alloc] init];
     CFPropertyListRef propList = CFPreferencesCopyAppValue(CFSTR("apps"), CFSTR("jp.rono23.removebackgroundapp"));
     if (propList) {
@@ -57,55 +60,74 @@ void setState(BOOL Enable) {
 
         CFRelease(propList);
     }
+    int count = [apps count];
 
-    // TODO: When we use "_toggleSwitcher", we can get the latest icons.
-    // But this is not good. Should fix.
-    // Ex) NSArray *icons = [switchCont _applicationIconsExcept:forOrientation:];
     SBUIController *uiCont = [objc_getClass("SBUIController") sharedInstance];
     [uiCont _toggleSwitcher];
 
     SBAppSwitcherController *switchCont = [objc_getClass("SBAppSwitcherController") sharedInstance];
     SBAppSwitcherBarView  *_bottomBar;
     object_getInstanceVariable(switchCont, "_bottomBar", &_bottomBar);
-    NSArray *icons = [_bottomBar.appIcons copy];
+    NSString *identifier = nil;
 
-    float isFirmware = [[[UIDevice currentDevice] systemVersion] floatValue];
-    int count = [apps count];
-    for (SBApplicationIcon *icon in icons) {
-        if (count > 0) {
+    if (isFirmware >= 5.0) {
+        NSArray *_appIcons;
+        object_getInstanceVariable(_bottomBar, "_appIcons", &_appIcons);
+        NSArray *iconViews = [_appIcons copy];
 
-            NSString *identifier;
-            if (isFirmware >= 4.1f) {
-                object_getInstanceVariable(icon, "_displayIdentifier", &identifier);
-            } else {
-                SBApplication *_app;
-                object_getInstanceVariable(icon, "_app", &_app);
-                identifier = _app.displayIdentifier;
+        for (id iconView in iconViews) {
+            SBIcon *icon;
+            object_getInstanceVariable(iconView, "_icon", &icon);
+            object_getInstanceVariable(icon, "_displayIdentifier", &identifier);
+
+            if (![icon isFolderIcon] && identifier == nil)
+                continue;
+
+            if (count > 0 && [apps containsObject:identifier])
+                continue;
+
+            [(SBIconView *)iconView closeBoxTapped];
+        }
+        [uiCont dismissSwitcherAnimated:0.0];
+        [iconViews release];
+
+    } else {
+        NSArray *icons = [_bottomBar.appIcons copy];
+        for (SBApplicationIcon *icon in icons) {
+            if (count > 0) {
+
+                if (isFirmware >= 4.1f) {
+                    object_getInstanceVariable(icon, "_displayIdentifier", &identifier);
+                } else {
+                    SBApplication *_app;
+                    object_getInstanceVariable(icon, "_app", &_app);
+                    identifier = _app.displayIdentifier;
+                }
+
+                if (identifier != nil && [apps containsObject:identifier])
+                    continue;
             }
 
-            if (identifier != nil && [apps containsObject:identifier])
-                continue;
+            if (isFirmware >= 4.1f) {
+                [switchCont iconCloseBoxTapped:icon];
+            } else {
+                SBAppIconQuitButton *quitBtn = [SBAppIconQuitButton buttonWithType:UIButtonTypeCustom];
+                quitBtn.appIcon = icon;
+                [switchCont _quitButtonHit:quitBtn];
+            }
         }
+        [uiCont _dismissSwitcher:0.0];
 
-        if (isFirmware >= 4.1f) {
-            [switchCont iconCloseBoxTapped:icon];
-        } else {
-            SBAppIconQuitButton *quitBtn = [SBAppIconQuitButton buttonWithType:UIButtonTypeCustom];
-            quitBtn.appIcon = icon;
-            [switchCont _quitButtonHit:quitBtn];
+        if (isFirmware >= 4.2f) {
+            [uiCont createFakeSpringBoardStatusBar];
+            [uiCont setFakeSpringBoardStatusBarVisible:YES];
         }
-    }
-
-    [apps release];
-    [icons release];
-    [uiCont _dismissSwitcher:0.0];
-
-    if (isFirmware >= 4.2f) {
-        [uiCont createFakeSpringBoardStatusBar];
-        [uiCont setFakeSpringBoardStatusBarVisible:YES];
+        [icons release];
     }
 
     UIWindow *window = getAppWindow();
     if([window isKeyWindow] == YES)
         [window closeButtonPressed];
+
+    [apps release];
 }
