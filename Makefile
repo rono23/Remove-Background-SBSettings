@@ -2,10 +2,10 @@ OBJECTS = Toggle
 TARGET = Toggle.dylib
 TOGGLE_NAME = RemoveBG
 
-SDKVERSION = 5.0
-SDKBINPATH = /Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
+SDKVERSION = 6.1
+SDKBINPATH = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
 CC = $(SDKBINPATH)/arm-apple-darwin10-llvm-gcc-4.2
-SYSROOT = /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(SDKVERSION).sdk
+SYSROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(SDKVERSION).sdk
 
 SB_PATH = /Developer/Jailbreak
 MS_PATH = /Developer/Jailbreak/MobileSubstrate

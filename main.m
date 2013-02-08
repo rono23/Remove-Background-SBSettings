@@ -6,6 +6,7 @@
 #import <SpringBoard/SBAppSwitcherController.h>
 #import <SpringBoard/SBAppSwitcherBarView.h>
 #import <SpringBoard/SBIconView.h>
+#import <SpringBoard/SBIconController.h>
 
 @interface SBAppIconQuitButton : UIButton
 @property(retain, nonatomic) SBApplicationIcon *appIcon;
@@ -63,66 +64,91 @@ void setState(BOOL Enable) {
     int count = [apps count];
 
     SBUIController *uiCont = [objc_getClass("SBUIController") sharedInstance];
-    [uiCont _toggleSwitcher];
-
     SBAppSwitcherController *switchCont = [objc_getClass("SBAppSwitcherController") sharedInstance];
     SBAppSwitcherBarView  *_bottomBar;
     object_getInstanceVariable(switchCont, "_bottomBar", &_bottomBar);
-    NSString *identifier = nil;
 
-    if (isFirmware >= 5.0) {
-        NSArray *_appIcons;
-        object_getInstanceVariable(_bottomBar, "_appIcons", &_appIcons);
-        NSArray *iconViews = [_appIcons copy];
+    [uiCont _toggleSwitcher];
 
-        for (id iconView in iconViews) {
-            SBIcon *icon;
-            object_getInstanceVariable(iconView, "_icon", &icon);
-            object_getInstanceVariable(icon, "_displayIdentifier", &identifier);
+    if (isFirmware >= 6.0) {
+        NSArray *identifiers = [[_bottomBar displayIdentifiers] copy];
 
-            if (![icon isFolderIcon] && identifier == nil)
-                continue;
+        for (NSString *identifier in identifiers) {
+            SBIconView *iconView = [_bottomBar visibleIconViewForDisplayIdentifier:identifier];
 
             if (count > 0 && [apps containsObject:identifier])
                 continue;
 
-            [(SBIconView *)iconView closeBoxTapped];
+            [iconView closeBoxTapped];
         }
+
         [uiCont dismissSwitcherAnimated:0.0];
-        [iconViews release];
+        [identifiers release];
+
+        SBIconController *iconCont = [objc_getClass("SBIconController") sharedInstance];
+        if (iconCont.openFolder)
+            [iconCont closeFolderAnimated:YES];
 
     } else {
-        NSArray *icons = [_bottomBar.appIcons copy];
-        for (SBApplicationIcon *icon in icons) {
-            if (count > 0) {
+        NSString *identifier = nil;
+        NSArray *_appIcons;
+        object_getInstanceVariable(_bottomBar, "_appIcons", &_appIcons);
 
-                if (isFirmware >= 4.1f) {
-                    object_getInstanceVariable(icon, "_displayIdentifier", &identifier);
-                } else {
-                    SBApplication *_app;
-                    object_getInstanceVariable(icon, "_app", &_app);
-                    identifier = _app.displayIdentifier;
+        if (isFirmware >= 5.0) {
+            NSArray *iconViews = [_appIcons copy];
+
+            for (id iconView in iconViews) {
+                SBIcon *icon;
+                object_getInstanceVariable(iconView, "_icon", &icon);
+                object_getInstanceVariable(icon, "_displayIdentifier", &identifier);
+
+                if (![icon isFolderIcon] && identifier == nil)
+                    continue;
+
+                if (count > 0 && [apps containsObject:identifier])
+                    continue;
+
+                [(SBIconView *)iconView closeBoxTapped];
+            }
+
+            [uiCont dismissSwitcherAnimated:0.0];
+            [iconViews release];
+
+        } else {
+            NSArray *icons = [_appIcons copy];
+
+            for (SBApplicationIcon *icon in icons) {
+                if (count > 0) {
+                    if (isFirmware >= 4.1f) {
+                        object_getInstanceVariable(icon, "_displayIdentifier", &identifier);
+                    } else {
+                        SBApplication *_app;
+                        object_getInstanceVariable(icon, "_app", &_app);
+                        identifier = _app.displayIdentifier;
+                    }
+
+                    if (identifier != nil && [apps containsObject:identifier])
+                        continue;
                 }
 
-                if (identifier != nil && [apps containsObject:identifier])
-                    continue;
+                if (isFirmware >= 4.1f) {
+                    [switchCont iconCloseBoxTapped:icon];
+                } else {
+                    SBAppIconQuitButton *quitBtn = [SBAppIconQuitButton buttonWithType:UIButtonTypeCustom];
+                    quitBtn.appIcon = icon;
+                    [switchCont _quitButtonHit:quitBtn];
+                }
             }
 
-            if (isFirmware >= 4.1f) {
-                [switchCont iconCloseBoxTapped:icon];
-            } else {
-                SBAppIconQuitButton *quitBtn = [SBAppIconQuitButton buttonWithType:UIButtonTypeCustom];
-                quitBtn.appIcon = icon;
-                [switchCont _quitButtonHit:quitBtn];
-            }
-        }
-        [uiCont _dismissSwitcher:0.0];
+            [uiCont _dismissSwitcher:0.0];
 
-        if (isFirmware >= 4.2f) {
-            [uiCont createFakeSpringBoardStatusBar];
-            [uiCont setFakeSpringBoardStatusBarVisible:YES];
+            if (isFirmware >= 4.2f) {
+                [uiCont createFakeSpringBoardStatusBar];
+                [uiCont setFakeSpringBoardStatusBarVisible:YES];
+            }
+
+            [icons release];
         }
-        [icons release];
     }
 
     UIWindow *window = getAppWindow();
