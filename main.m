@@ -156,7 +156,7 @@ void setState(BOOL Enable) {
     }
 
     UIWindow *window = getAppWindow();
-    if([window isKeyWindow] == YES)
+    if([window isKeyWindow] == YES && [window respondsToSelector:@selector(closeButtonPressed)])
         [window closeButtonPressed];
 
     [apps release];
