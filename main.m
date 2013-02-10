@@ -63,33 +63,37 @@ void setState(BOOL Enable) {
     }
     int count = [apps count];
 
-    SBUIController *uiCont = [objc_getClass("SBUIController") sharedInstance];
     SBAppSwitcherController *switchCont = [objc_getClass("SBAppSwitcherController") sharedInstance];
     SBAppSwitcherBarView  *_bottomBar;
     object_getInstanceVariable(switchCont, "_bottomBar", &_bottomBar);
 
-    [uiCont _toggleSwitcher];
-
     if (isFirmware >= 6.0) {
-        NSArray *identifiers = [[_bottomBar displayIdentifiers] copy];
+        SBIconController *iconCont = [objc_getClass("SBIconController") sharedInstance];
+        SBApplication *frontApp = [[UIApplication sharedApplication] _accessibilityFrontMostApplication];
+        NSString *currentAppDisplayID = [frontApp displayIdentifier];
+        NSArray *identifiers = [[switchCont.model identifiers] copy];
 
         for (NSString *identifier in identifiers) {
-            SBIconView *iconView = [_bottomBar visibleIconViewForDisplayIdentifier:identifier];
+            if (currentAppDisplayID == identifier)
+                continue;
 
             if (count > 0 && [apps containsObject:identifier])
                 continue;
 
+            id icon = [_bottomBar _iconForDisplayIdentifier:identifier];
+            SBIconView *iconView = [_bottomBar _iconViewForIcon:icon creatingIfNecessary:YES];
             [iconView closeBoxTapped];
         }
 
-        [uiCont dismissSwitcherAnimated:0.0];
-        [identifiers release];
-
-        SBIconController *iconCont = [objc_getClass("SBIconController") sharedInstance];
         if (iconCont.openFolder)
             [iconCont closeFolderAnimated:YES];
 
+        [identifiers release];
+
     } else {
+        SBUIController *uiCont = [objc_getClass("SBUIController") sharedInstance];
+        [uiCont _toggleSwitcher];
+
         NSString *identifier = nil;
         NSArray *_appIcons;
         object_getInstanceVariable(_bottomBar, "_appIcons", &_appIcons);
